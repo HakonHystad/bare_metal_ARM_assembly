@@ -1,7 +1,8 @@
 /* communication via mailbox */
 
 	.include "mmap.s"
-	
+	//.equ mailboxAddr, 0x3F00B880	// mailbox base address
+
 ///////////////////////////////////////////////////////////////////////////////////////
 // Macros 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -33,9 +34,9 @@ mailboxWrite:
 	msg .req r2
 	mov msg,r0
 
-	push {lr}
 	loadMailboxAddr
 	addr .req r0
+	
 /* wait for the ready signal from GPU */
 waitForWrite$:
 	writeStatus .req r3
@@ -53,7 +54,7 @@ waitForWrite$:
 	.unreq msg
 	.unreq addr
 
-	pop {pc}
+	mov pc,lr
 
 /*-------------------------------------- mailboxRead  ---------------------------------------*/
 /* mailbox to read from in r0, output to r0 */
@@ -64,7 +65,6 @@ mailboxRead:
 
 	box .req r1
 	mov box,r0
-	push {lr}
 	loadMailboxAddr
 	addr .req r0
 
@@ -95,5 +95,5 @@ waitForRead$:
 	and r0,msg,#0xFFFFFFF0	// upper 28 bits are the message
 	.unreq msg
 
-	pop {pc}
+	mov pc,lr
 	

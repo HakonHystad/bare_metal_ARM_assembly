@@ -1,5 +1,7 @@
 /* setup buffer for GPU communication */
 
+	.include "mmap.s"
+	
 ///////////////////////////////////////////////////////////////////////////////////////
 // declarations
 //////////////////////////////////////////////////////////////////////////////////////
@@ -40,7 +42,8 @@ initFrameBuffer:
 
 	/* ask GPU for place to store frame buffer */
 	mov r0,fbInfoAddr
-	add r0,#0xC0000000	// flush cache?
+	//add r0,#0xC0000000	// uncached bus videoCore start
+	add r0, #unCachedOffset
 	mov r1,#1		// mailbox 1
 	bl mailboxWrite
 

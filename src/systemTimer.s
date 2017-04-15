@@ -1,6 +1,7 @@
 /* use the system counter to get time and also wait */
-	
+
 	.include "mmap.s"
+//	.equ timerAddr, 0x3F003000	// timer base address
 	
 ///////////////////////////////////////////////////////////////////////////////////////
 // Macros 
@@ -54,7 +55,6 @@ waitLoop$:
 /*-------------------------------------- getTime  ---------------------------------------*/
 /* returns the lowest 4 bytes of the system counter in r0 */
 getTime:
-	push {lr}
 	loadTimerAddr
 	ldr r0,[r0,#4]
-	pop {pc}
+	mov pc,lr

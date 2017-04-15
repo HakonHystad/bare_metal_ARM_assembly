@@ -3,3 +3,7 @@ These notes are stuff I come accross when doing research. They are not original 
 https://github.com/dwelch67/raspberrypi/tree/master/baremetal
 
 The GPU is a general purpose processor which share the resources with the main processor. It boots first and reads the SD card and loads kernel.img into RAM starting at 0x8000.
+
+https://github.com/edargelies/bakingpi-www/blob/master/solutions/screen3/lesson8.txt
+
+There are some shared memory issues between the GPU and CPU, needed to define the memory sections explicitly to keep frameBuffer within certain memory

@@ -1,6 +1,7 @@
 /* set port functions and pins for the GPIO pins */
 
 	.include "mmap.s"
+//	.equ GPIOaddr, 0x3F200000	// the GPIO base address
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // Macros 
@@ -34,7 +35,6 @@ setGPIOport:
 	movhi pc,lr		// (mov if higher) return
 
 	/* get address for pin */
-	push {lr}		// store the inital return addr on stack
 	mov r4,r0		// store pin nr
 	loadGPIOaddr
 
@@ -57,7 +57,7 @@ portLoop$:
 	str r1,[r0]
 
 	/* return */
-	pop {pc}		// pop return address into program counter
+	mov pc,lr		// return address into program counter
 
 
 	
@@ -75,7 +75,6 @@ setGPIOpin:
 	mov r2,pinNum
 	.unreq pinNum
 	pinNum .req r2		// change register for pinNum
-	push {lr}
 	loadGPIOaddr
 	gpioAddr .req r0
 
@@ -105,5 +104,5 @@ setGPIOpin:
 	.unreq gpioAddr
 
 	/* return */
-	pop {pc}
+	mov pc,lr
 
