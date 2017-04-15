@@ -1,4 +1,5 @@
-
+	.include "mmap.s"
+	
 ///////////////////////////////////////////////////////////////////////////////////////
 // data
 //////////////////////////////////////////////////////////////////////////////////////
@@ -7,7 +8,7 @@
 	.align 1
 foreColor:
 	.hword 0xFFFF
-
+	
 	.align 2
 graphicsAddress:
 	.int 0
@@ -80,7 +81,7 @@ setPixel:
 
 	/* find memory offset */
 	ldr addr,[addr,#32]
-	sub addr,#0xC0000000	// sub cache access
+	sub addr,#unCachedOffset	// sub cache access
 	add width,#1		// restore width
 	mla x,y,width,x		// x=y*width+x -> offset
 	add addr,x,lsl #1	// mem ptr = offset*2 ( 2 bytes per pixel/color )
