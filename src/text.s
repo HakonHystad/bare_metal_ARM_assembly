@@ -24,18 +24,20 @@ signedString:
 
 	/* check sign */
 	cmp val,#0
-	bge unsignedString		// pass on if >0, let it handle return
+	bge unsignedString		// pass on if >=0, let it handle return
 
+	teq dest,#0			// no-store flag
+	
 	/* add sign */
-	mov r3, #'-'			
-	strb r3,[dest]
-	add dest,#1
+	movne r3, #'-'			
+	strneb r3,[dest]
+	addne dest,#1
 
 	/* toString */
-	and val, #0xEFFFFFFF		// remove sign
+	rsb val,#0			// 0-val => change sign
 	push {lr}			// handle return
 	bl unsignedString
-	teq r0,#0			// no string stored
+	teq r0,#0			// no string
 	addne r0,#1			// length + 1 (sign)
 	pop {pc}
 
@@ -60,9 +62,9 @@ unsignedString:
 
 	
 	/* validate input */
-	cmp base,#36			// limit to base 36
-	moveq r0,#0
-	popge {r4,r5,r6,lr}
+	//cmp base,#36			// limit to base 36
+	//movgt r0,#0
+	//popgt {r4,r5,r6,pc}
 
 // get each char through long division with base
 charLoop$:
@@ -90,7 +92,7 @@ charLoop$:
 
 	/* return length */
 	mov r0,len
-	pop {r4,r5,r6,lr}
+	pop {r4,r5,r6,pc}
 
 	.unreq val
 	.unreq dest
@@ -144,14 +146,14 @@ formatString:
 	mov formatLen, r1
 	mov dest, r2
 	mov arg, r3
-	add argList, sp,#7*4		// compensate for the pushed regs
+	add argList, sp,#7*4		// hold addr to stack arguments, compensate for the pushed regs
 	mov len, #0			// initialize
 
 formatLoop$:
 
 	subs formatLen, #1
 	movlt r0,len
-	poplt {r4,r5,r6,r7,r8,r9,lr}
+	poplt {r4,r5,r6,r7,r8,r9,pc}
 
 	/* check format */
 	ldrb r0,[format]
@@ -170,7 +172,7 @@ formatChar$:
 formatArg$:
 	subs formatLen,#1
 	movlt r0,len			// if through all args
-	poplt {r4,r5,r6,r7,r8,r9,lr}
+	poplt {r4,r5,r6,r7,r8,r9,pc}
 
 	/* load argument */
 	ldrb r0,[format]
