@@ -92,6 +92,12 @@ render$:
 	mov r3,#0		// y2
 	bl drawRectangleDiag
 
+	/* draw a circle */
+	mov r0,#512		// x_c
+	ldr r1,=384		// y_c
+	ldr r2,=383		// radius
+	bl drawCircle
+
 	/* make a formated string */
 	ldr r0,=format
 	mov r1,#formatEnd-format // length of format

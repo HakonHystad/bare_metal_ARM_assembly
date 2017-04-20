@@ -28,6 +28,7 @@ font:
 	.globl drawLine		// sets pixels in a line between 2 points
 	.globl drawRectangle	// make a rectangle based on size and upper left corner coordinate
 	.globl drawRectangleDiag // make a rectangle based on the diagonal
+	.globl drawCircle
 	.globl drawChar		// make a fonted character
 	.globl drawString
 
@@ -325,8 +326,95 @@ heightLoop$:
 	.unreq x2
 	.unreq y2
 	
+/*-------------------------------------- drawCircle  ---------------------------------------*/
+/* draw a circle in r0=x,r1=y,r2=radius */
 
+drawCircle:
+
+	push {r4,r5,r6,r7,r8,lr}
+
+	x_c .req r4
+	y_c .req r5
+	x .req r6
+	y .req r7
+	error .req r8
+
+	mov x_c,r0
+	mov y_c,r1
+	mov x,r2		// initialize with radius
+	mov y,#0		// starting from horizontal
+	mov error,#0
+
+/* only need to iterate over 45 deg and mirror */
+circleLoop$:	
+	cmp x,y			// while(x>y)
+	pople {r4,r5,r6,r7,r8,pc}
+
+	/* set pixel in  all octants */
+	add r0,x_c,x
+	add r1,y_c,y
+	bl setPixel
+
+	add r0,x_c,y
+	add r1,y_c,x
+	bl setPixel
+
+	sub r0,x_c,y
+	add r1,y_c,x
+	bl setPixel
+
+	sub r0,x_c,x
+	add r1,y_c,y
+	bl setPixel
+
+	sub r0,x_c,x
+	sub r1,y_c,y
+	bl setPixel
+
+	sub r0,x_c,y
+	sub r1,y_c,x
+	bl setPixel
+
+	add r0,x_c,y
+	sub r1,y_c,x
+	bl setPixel
+
+	add r0,x_c,x
+	sub r1,y_c,y
+	bl setPixel
+
+	/* update y */
+	add y,#1
+
+	/* find error x^2+y^2-r^2 */
+	mov r0,y
+	lsl r0,#1
+	add r0,#1		// y_change = 2y+1 since only y is incremented
+	add error,r0
+
+	/* only option for x is to decrease or stay the same */
+	mov r0,error
+	sub r0,x
+	lsl r0,#1
+	add r0,#1		//  2*(error-x)+1
+	cmp r0,#0		// check if decreasing x makes a better circle (1-2*x)
+
+	ble circleLoop$
 	
+	sub x,#1		// if so do it
+	// and update error with 1-2*x
+	mov r0,x
+	lsl r0,#1
+	rsb r0,#1
+	add error,r0
+
+	b circleLoop$
+
+	.unreq x_c
+	.unreq y_c
+	.unreq x
+	.unreq y
+	.unreq error
 	
 	
 /*-------------------------------------- drawChar  ---------------------------------------*/	
