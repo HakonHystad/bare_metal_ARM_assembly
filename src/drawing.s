@@ -27,7 +27,7 @@ font:
 	.globl setPixel		// draw a given pixel
 	.globl drawLine		// sets pixels in a line between 2 points
 	.globl drawRectangle	// make a rectangle based on size and upper left corner coordinate
-	.globl drawRectangle2
+	.globl drawRectangleDiag // make a rectangle based on the diagonal
 	.globl drawChar		// make a fonted character
 	.globl drawString
 
@@ -243,7 +243,7 @@ drawRectangle:
 /*-------------------------------------- drawRectangle2  ---------------------------------------*/
 	/* pass diagonal: r0=x_1,r1=y_1,r2=x_2,r3=y_2 */
 
-drawRectangle2:
+drawRectangleDiag:
 	push {r4,r5,r6,r7,r8,r9,r10,r11,lr}
 
 	x1 .req r4
@@ -270,7 +270,7 @@ drawRectangle2:
 
 	/* get height parameters */
 	subs height,y2,y1
-	rsblt width,#0		// abs value
+	rsblt height,#0		// abs value
 	movlt Y,y2		// y1>y2
 	movge Y,y1
 

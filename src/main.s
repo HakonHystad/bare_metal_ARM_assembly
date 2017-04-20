@@ -62,6 +62,7 @@ noError$:
 render$:
 
 	/*
+	// draw rectangle based on upper corner, width and height
 	rwidth .req r0
 	rheight .req r1
 	rx .req r2
@@ -79,11 +80,17 @@ render$:
 	.unreq ry*/
 
 	/* draw a rectangular frame, passing diagonal coordinates */
-	ldr r0,=0		// x1
-	ldr r1,=0		// y1
-	ldr r2,=1023		// x2
-	ldr r3,=767		// y2
-	bl drawRectangle2
+	// upper corner to lower
+	//mov r0,#0		// x1
+	//mov r1,#0		// y1
+	//ldr r2,=1023		// x2
+	//ldr r3,=767		// y2
+	// lower corner to upper, works both ways
+	ldr r0,=1023		// x1
+	ldr r1,=767		// y1
+	mov r2,#0		// x2
+	mov r3,#0		// y2
+	bl drawRectangleDiag
 
 	/* make a formated string */
 	ldr r0,=format
