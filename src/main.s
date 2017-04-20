@@ -61,6 +61,7 @@ noError$:
 /* draw graphics */
 render$:
 
+	/*
 	rwidth .req r0
 	rheight .req r1
 	rx .req r2
@@ -75,8 +76,16 @@ render$:
 	.unreq rwidth
 	.unreq rheight
 	.unreq rx
-	.unreq ry
+	.unreq ry*/
 
+	/* draw a rectangular frame, passing diagonal coordinates */
+	ldr r0,=0		// x1
+	ldr r1,=0		// y1
+	ldr r2,=1023		// x2
+	ldr r3,=767		// y2
+	bl drawRectangle2
+
+	/* make a formated string */
 	ldr r0,=format
 	mov r1,#formatEnd-format // length of format
 	ldr r2,=formatEnd	// start of string
@@ -88,6 +97,7 @@ render$:
 	bl formatString
 	add sp,#4*4		// overwrite 4 args on the stack
 
+	/* draw the formated string */
 	mov r1,r0		// pass string length (ret from formatString)
 	ldr r0,=formatEnd
 	mov r2,#50
@@ -104,7 +114,7 @@ endLoop$:
 .section .data
 
 format:
-	.ascii "Converting %d:\n0b%b=0x%x=0%o='%c'"
+	.ascii "Converting %d:\n\t0b%b=0x%x=0%o='%c'"
 formatEnd:	
 	
 	

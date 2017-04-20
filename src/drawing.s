@@ -27,6 +27,7 @@ font:
 	.globl setPixel		// draw a given pixel
 	.globl drawLine		// sets pixels in a line between 2 points
 	.globl drawRectangle	// make a rectangle based on size and upper left corner coordinate
+	.globl drawRectangle2
 	.globl drawChar		// make a fonted character
 	.globl drawString
 
@@ -238,6 +239,93 @@ drawRectangle:
 	.unreq y0
 	.unreq x1
 	.unreq y1
+
+/*-------------------------------------- drawRectangle2  ---------------------------------------*/
+	/* pass diagonal: r0=x_1,r1=y_1,r2=x_2,r3=y_2 */
+
+drawRectangle2:
+	push {r4,r5,r6,r7,r8,r9,r10,r11,lr}
+
+	x1 .req r4
+	y1 .req r5
+	x2 .req r6
+	y2 .req r7
+
+	mov x1,r0
+	mov y1,r1
+	mov x2,r2
+	mov y2,r3
+
+	width .req r8
+	height .req r9
+	X .req r10
+	Y .req r11
+
+
+	/* get width parameters */
+	subs width,x2,x1		
+	rsblt width,#0		// absolute value
+	movlt X,x2		// x1>x2
+	movge X,x1
+
+	/* get height parameters */
+	subs height,y2,y1
+	rsblt width,#0		// abs value
+	movlt Y,y2		// y1>y2
+	movge Y,y1
+
+/* set upper and lower pixels over the width */
+widthLoop$:
+	subs width,#1
+	blt heightLoop$
+
+	/* set y1 pixel at (r0,r1) */
+	mov r0,X
+	mov r1,y1		
+	bl setPixel
+
+	/* set y2 pixel at (r0,r1) */
+	mov r0,X
+	mov r1,y2		
+	bl setPixel
+
+	/* update width direction */
+	add X,#1
+
+
+	b widthLoop$
+
+/* set left and right over the height */
+heightLoop$:
+	subs height,#1
+	poplt {r4,r5,r6,r7,r8,r9,r10,r11,pc}
+
+	/* set x1 pixel at (r0,r1) */
+	mov r0,x1
+	mov r1,Y		
+	bl setPixel
+
+	/* set y2 pixel at (r0,r1) */
+	mov r0,x2
+	mov r1,Y		
+	bl setPixel
+
+	/* update width direction */
+	add Y,#1
+
+	b heightLoop$
+
+
+	.unreq X
+	.unreq Y
+	.unreq width
+	.unreq height
+	.unreq x1
+	.unreq y1
+	.unreq x2
+	.unreq y2
+	
+
 	
 	
 	
