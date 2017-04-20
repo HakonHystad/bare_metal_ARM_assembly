@@ -77,30 +77,34 @@ render$:
 	.unreq rx
 	.unreq ry
 
-	mov r0,#0x41
-	mov r1,#20
-	mov r2,#20
-	bl drawChar
+	ldr r0,=format
+	mov r1,#formatEnd-format // length of format
+	ldr r2,=formatEnd	// start of string
+	mov r3,#65		// set 5 args to 'A'
+	push {r3}
+	push {r3}
+	push {r3}
+	push {r3}
+	bl formatString
+	add sp,#4*4		// overwrite 4 args on the stack
 
-
-	ldr r0,=testString
-	mov r1,#12
+	mov r1,r0		// pass string length (ret from formatString)
+	ldr r0,=formatEnd
 	mov r2,#50
 	mov r3,#50
 	bl drawString
 	
 
-	mov r0,#1024
-	bl wait
 
-
+endLoop$:	
 	
-	b render$		// inf loop
+	b endLoop$		// inf loop
 
 	
 .section .data
 
-testString:
-	.string "Hello\nWorld!"
+format:
+	.ascii "Converting %d:\n0b%b=0x%x=0%o='%c'"
+formatEnd:	
 	
 	
