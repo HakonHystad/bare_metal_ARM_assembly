@@ -25,6 +25,8 @@ unused_handler:	.word halt
 interrupt_handler:	.word irq
 fast_handler:	.word halt
 
+halt:	b halt
+
 	// by loading constants we get the correct value in memory from 0x8000 onwards, now copy this to 0x0000
 reset:
 	mov r0,#0x8000

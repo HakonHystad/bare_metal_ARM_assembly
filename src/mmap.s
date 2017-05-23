@@ -17,6 +17,18 @@
 	.equ mailboxAddr, 0x3F00B880	// mailbox base address
 	.equ unCachedOffset, 0xC0000000		// uncached bus address of the VideoCore start 
 
+	///////////////////////////////////////////////////////////////////////////////////////
+	// Interrupts
+	//////////////////////////////////////////////////////////////////////////////////////
+	.equ IRQaddr, 0x3F00B000	// interrupt base address
+	// offsets
+	.equ IRQ_BASIC_PDG, 0x200	// basic interrupt pending
+	.equ IRQ_PDG1, 0x204		// pending interrupt 1
+	.equ IRQ_PDG2, 0x208		// pending 2
+	.equ IRQ_EN1, 0x210		// interrupt enable 1
+	.equ IRQ_EN2, 0x214		// enable 2
+	.equ IRQ_DI1, 0x21C		// interrupt disable 1
+	.equ IRQ_DI2, 0x220		// disable 2
 
 
 
