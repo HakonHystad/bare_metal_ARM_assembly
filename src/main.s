@@ -3,11 +3,46 @@
 	.globl _start
 
 _start:
+
+	/* set up interrupt vector table */
+	// let bootloarder put branch instructions to the ISR address constants at the start of instruction memory (0x8000)
+	ldr pc, reset_handler	// branch to reset imidiatly
+	// the rest will never be executed
+	ldr pc, undefined_handler
+	ldr pc, software_handler
+	ldr pc, prefetch_abort_handler
+	ldr pc, data_abort_handler
+	ldr pc, unused_handler
+	ldr pc, interrupt_handler
+	ldr pc, fast_handler
+
+reset_handler:	.word reset
+undefined_handler:	.word halt
+software_handler:	.word halt
+prefetch_abort_handler:	.word halt
+data_abort_handler:	.word halt
+unused_handler:	.word halt
+interrupt_handler:	.word irq
+fast_handler:	.word halt
+
+	// by loading constants we get the correct value in memory from 0x8000 onwards, now copy this to 0x0000
+reset:
+	mov r0,#0x8000
+	mov r1,#0x0000
+
+	ldmia r0!,{r2-r9}	// load r2-r9 with words from address in r0 and on, update r0 to incremented after (!)
+	stmia r1!,{r2-r9}	// store r2-r9 in address r1 and on, update r1
+	// ivt table is now filled with pointers to the constants, put the constants right after which points to the ISRs
+	ldmia r0!,{r2-r9}	
+	stmia r1!,{r2-r9}
+	
+	
 	b main
 
 /*-------------------------------------- instructions  ---------------------------------------*/
 .section .text
 main:
+	
 	mov sp,#0x8000		//stack starts at 0x8000
 
 	/* initialize frame buffer with */
