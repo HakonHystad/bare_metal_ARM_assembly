@@ -12,7 +12,7 @@
 
 /*-------------------------------------- divideU32  ---------------------------------------*/
 // r0 = divident, r1 = divisor. Return: result, remainder
-divideU32:
+divideU32:	
 
 	divident .req r0
 	divisor .req r1
@@ -41,7 +41,7 @@ divideU32Loop$:
 	cmp mod, current
 	blt divideU32LoopContinue$	//  while remainder<current
 
-	add res, res,#1			// set lsb
+	add res, res,#1			// set/reset lsb
 	subs mod, current		// update remainder
 	lsleq res, shift		// shift in final bit
 	beq divideU32Return$		// no more remainder => perfect division
