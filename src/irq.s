@@ -1,12 +1,8 @@
 /* handle interrupt requests and branch to the apropriate ISRs */
 	.include "mmap.s"
 
-///////////////////////////////////////////////////////////////////////////////////////
-// literals 
-//////////////////////////////////////////////////////////////////////////////////////
-.equ KBD_CLK_PIN, 2
-
-	
+	.equ KBD_CLK_PIN, 2
+		
 ///////////////////////////////////////////////////////////////////////////////////////
 // declarations 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -24,6 +20,19 @@
 irq:
 	push {r0,r1,lr}		// save state
 
+/***************** TEST ************************/
+	
+	/* set ACT LED pin as output */
+	mov r0,#47		// pin 47
+	mov r1,#1		// output
+	bl setGPIOport
+	
+	/* turn on ACT led */
+	mov r0,#47
+	mov r1,#1
+	bl setGPIOpin
+
+/**************** TEST ************************/
 	// check if interrupt is pending in 1 or 2
 	ldr r1, =IRQaddr
 
@@ -50,7 +59,7 @@ PDG2$:
 	/* different ISRs for source 63:32 goes here */
 	// gpio_int[0]..gpio_int[3] <=> GPU_interrupt 49..52, 49 covers all pins of the header
 	tst r0,#1<<(49-32)	// check gpio_int[0], all header pins
-	bne ISR_kbd
+	blne ISR_kbd
 	
 return$:
 	pop {r0,r1,pc}
@@ -67,6 +76,12 @@ ISR_kbd:
 	str r1, [r0,#GPEDS0]
 
 	mov r2,#5		// loop five times
+
+	/* set ACT LED pin as output */
+	mov r0,#47		// pin 47
+	mov r1,#1		// output
+	bl setGPIOport
+
 
 ledLoop$:
 	

@@ -22,7 +22,7 @@ software_handler:	.word halt
 prefetch_abort_handler:	.word halt
 data_abort_handler:	.word halt
 unused_handler:	.word halt
-interrupt_handler:	.word irq
+interrupt_handler:	.word error$
 fast_handler:	.word halt
 
 halt:	b halt
@@ -94,6 +94,9 @@ noError$:
 	mov r0,color
 	bl setForeColor
 	.unreq color
+
+	bl init_kbd
+	cpsie i			// enable interrupts
 
 /* draw graphics */
 render$:

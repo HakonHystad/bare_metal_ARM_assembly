@@ -28,7 +28,8 @@
 	.equ GPFEN1, 0x5C		// falling edge detect enable 1
 
 	.equ GPPUD, 0x94		// gpio pin pull-up/down enable
-	
+	.equ GPPUDCLK0, 0x98		// gpio pull-up/down enable clock 0
+	.equ GPPUDCLK1, 0x9C		// pull-up/down enable clock 1
 
 	///////////////////////////////////////////////////////////////////////////////////////
 	// TIMER
