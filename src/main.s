@@ -22,7 +22,7 @@ software_handler:	.word halt
 prefetch_abort_handler:	.word halt
 data_abort_handler:	.word halt
 unused_handler:	.word halt
-interrupt_handler:	.word error$
+interrupt_handler:	.word irq
 fast_handler:	.word halt
 
 halt:	b halt
