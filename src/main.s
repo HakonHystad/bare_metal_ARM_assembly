@@ -29,6 +29,16 @@ halt:	b halt
 
 	// by loading constants we get the correct value in memory from 0x8000 onwards, now copy this to 0x0000
 reset:
+	// GTFO of hypervisory mode, mother fucker cost me 2 days
+	/***************************************************dwelch*/
+	mrs r0,cpsr
+	bic r0,r0,#0x1F
+	orr r0,r0,#0x13
+	msr spsr_cxsf,r0
+	add r0,pc,#4
+	msr ELR_hyp,r0
+	eret
+	/*********************************************************/
 	mov r0,#0x8000
 	mov r1,#0x0000
 
@@ -37,6 +47,25 @@ reset:
 	// ivt table is now filled with pointers to the constants, put the constants right after which points to the ISRs
 	ldmia r0!,{r2-r9}	
 	stmia r1!,{r2-r9}
+
+	// set interrupt modes
+	/*****************************************************dwelch*/
+
+				;@ (PSR_IRQ_MODE|PSR_FIQ_DIS|PSR_IRQ_DIS)
+	mov r0,#0xD2
+	msr cpsr_c,r0
+	mov sp,#0x8000
+
+				;@ (PSR_FIQ_MODE|PSR_FIQ_DIS|PSR_IRQ_DIS)
+	mov r0,#0xD1
+	msr cpsr_c,r0
+	mov sp,#0x4000
+
+				;@ (PSR_SVC_MODE|PSR_FIQ_DIS|PSR_IRQ_DIS)
+	mov r0,#0xD3
+	msr cpsr_c,r0
+	mov sp,#0x8000000
+	/****************************************************/
 	
 	
 	b main
@@ -98,6 +127,7 @@ noError$:
 	bl init_kbd
 	cpsie i			// enable interrupts
 
+	
 /* draw graphics */
 render$:
 

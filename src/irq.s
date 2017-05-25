@@ -1,14 +1,14 @@
 /* handle interrupt requests and branch to the apropriate ISRs */
 	.include "mmap.s"
 
-	.equ KBD_CLK_PIN, 2
+	.equ KBD_CLK_PIN, 14
 		
 ///////////////////////////////////////////////////////////////////////////////////////
 // declarations 
 //////////////////////////////////////////////////////////////////////////////////////
 .section .text
 	.globl irq	// global interrupt handler
-	.globl ISR_kbd	// ps2 keyboard clock interrupt
+	//.globl ISR_kbd	// ps2 keyboard clock interrupt
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // definitions
@@ -18,21 +18,10 @@
 	
 /*-------------------------------------- global interrupt handler  ---------------------------------------*/
 irq:
-	push {r0,r1,lr}		// save state
 
-/***************** TEST ************************/
-	
-	/* set ACT LED pin as output */
-	mov r0,#47		// pin 47
-	mov r1,#1		// output
-	bl setGPIOport
-	
-	/* turn on ACT led */
-	mov r0,#47
-	mov r1,#1
-	bl setGPIOpin
+	cpsie f			// disable interrupts
+	push {r0-r3,lr}		// save state
 
-/**************** TEST ************************/
 	// check if interrupt is pending in 1 or 2
 	ldr r1, =IRQaddr
 
@@ -62,7 +51,8 @@ PDG2$:
 	blne ISR_kbd
 	
 return$:
-	pop {r0,r1,pc}
+	cpsie i			// enable interrupts
+	pop {r0-r3,pc}
 
 /*-------------------------------------- keyboard clock interrupt handler  ---------------------------------------*/
 ISR_kbd:
@@ -75,37 +65,28 @@ ISR_kbd:
 	mov r1, #1<<KBD_CLK_PIN
 	str r1, [r0,#GPEDS0]
 
-	mov r2,#5		// loop five times
+	mov r4,#5		// loop five times
 
 	/* set ACT LED pin as output */
 	mov r0,#47		// pin 47
 	mov r1,#1		// output
 	bl setGPIOport
 
-
-ledLoop$:
-	
 	/* turn on ACT led */
 	mov r0,#47
 	mov r1,#1
 	bl setGPIOpin
 
-	/* wait */
-	ldr r0,=1000000		//wait 1s
+	ldr r0,=4000000
 	bl wait
-	
+
 	/* turn off ACT led */
 	mov r0,#47
 	mov r1,#0
 	bl setGPIOpin
+	
 
-	/* wait */
-	ldr r0,=1000000
-	bl wait
-
-	subs r2,#1
-
-	bge ledLoop$
+	
 
 	pop {r0-r4,pc}
 
