@@ -18,14 +18,12 @@
 	
 /*-------------------------------------- global interrupt handler  ---------------------------------------*/
 irq:
-
-	cpsie f			// disable interrupts
 	push {r0-r3,lr}		// save state
 
 	// check if interrupt is pending in 1 or 2
 	ldr r1, =IRQaddr
 
-	/* only care about pins on the header for now
+	/***** only care about pins on the header for now *********
 	ldr r0, [r1]
 	tst r0,#1<<8		// test pending 1
 	bne PDG1$
@@ -51,8 +49,8 @@ PDG2$:
 	blne ISR_kbd
 	
 return$:
-	cpsie i			// enable interrupts
-	pop {r0-r3,pc}
+	pop {r0-r3,lr}
+	eret			// exception return in HYP mode
 
 /*-------------------------------------- keyboard clock interrupt handler  ---------------------------------------*/
 ISR_kbd:
@@ -61,11 +59,11 @@ ISR_kbd:
 	push {r0-r4,lr}
 
 	// clear interrupt (by writing 1 to event detect reg)
+
 	ldr r0, =GPIOaddr
 	mov r1, #1<<KBD_CLK_PIN
 	str r1, [r0,#GPEDS0]
 
-	mov r4,#5		// loop five times
 
 	/* set ACT LED pin as output */
 	mov r0,#47		// pin 47
@@ -84,7 +82,9 @@ ISR_kbd:
 	mov r0,#47
 	mov r1,#0
 	bl setGPIOpin
-	
+
+	ldr r0,=1000000
+	bl wait
 
 	
 
