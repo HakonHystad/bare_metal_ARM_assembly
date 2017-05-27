@@ -64,30 +64,23 @@ ISR_kbd:
 	mov r1, #1<<KBD_CLK_PIN
 	str r1, [r0,#GPEDS0]
 
+	/*-------------------------------------- ISR  ---------------------------------------*/
 
-	/* set ACT LED pin as output */
-	mov r0,#47		// pin 47
-	mov r1,#1		// output
-	bl setGPIOport
 
-	/* turn on ACT led */
-	mov r0,#47
-	mov r1,#1
-	bl setGPIOpin
+	ldr r0,=irq_count
+	ldr r1,[r0]
+	add r1,#1
+	str r1,[r0]
 
-	ldr r0,=4000000
-	bl wait
 
-	/* turn off ACT led */
-	mov r0,#47
-	mov r1,#0
-	bl setGPIOpin
-
-	ldr r0,=1000000
-	bl wait
+	/*-------------------------------------- ISR  ---------------------------------------*/
 
 	
 
 	pop {r0-r4,pc}
 
+.section .data
+	
+	.globl irq_count
+irq_count:	.int 0
 	
