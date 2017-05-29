@@ -110,13 +110,18 @@ render$:
 	bl drawCircle
 
 
-drawIrqCount$:	
-	
+drawIrqCount$:
+
+	ldr r0,=0xE7E0
+	bl setForeColor
+
+	/* draw string */
 	ldr r0,=irqCountFormat
 	mov r1,#irqCountFormatEnd-irqCountFormat
 	ldr r2,=irqCountFormatEnd
 	ldr r3,=irq_count
 	ldr r3,[r3]
+	mov r4,r3		// keep count
 	bl formatString
 
 	mov r1,r0
@@ -124,6 +129,28 @@ drawIrqCount$:
 	mov r2,#50
 	mov r3,#50
 	bl drawString
+
+	
+	ldr r0,=100000
+	bl wait
+
+	/* clear string */
+	mov r0,#0		// black out
+	bl setForeColor
+
+	ldr r0,=irqCountFormat
+	mov r1,#irqCountFormatEnd-irqCountFormat
+	ldr r2,=irqCountFormatEnd
+	ldr r3,=irq_count
+	mov r3,r4
+	bl formatString
+
+	mov r1,r0
+	ldr r0,=irqCountFormatEnd
+	mov r2,#50
+	mov r3,#50
+	bl drawString
+
 
 	b drawIrqCount$
 
