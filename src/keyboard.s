@@ -105,34 +105,26 @@ ISR_kbd:
 	bl getTime
 	ldr SOFaddr,=SOFtimer
 	ldr r2,[SOFaddr]		// load timer
+	.unreq SOFaddr
 	sub r2,time,r2			// calc interval
-	ldr r3,=KBD_TIMEOUT
-	cmp r2,r3
+	ldr r1,=KBD_TIMEOUT
+	cmp r2,r1
 	
 	blt recvKey$			// if !timeout we're still receiving a keycode
 
-	
-	/************************************TEST*****************************/
-	ldr r0,=count
-	ldr r0,[r0]
-	mov r1,#'X'
-	add r1,r0
-	ldr r0,=keyBuffer
-	strb r1,[r0]
-	/***********************************TEST*****************************/
-
 
 	// if timeout reset everything for a new keycode
-	ldr r3,=count
+	ldr r1,=count
 	mov r2,#0
-	strb r2,[r3]			// rest count
-	ldr r3,=key
-	strb r2,[r3]			// reset key
-	str time,[SOFaddr]		// update SOF time
+	strb r2,[r1]			// rest count
+	ldr r1,=key
+	strb r2,[r1]			// reset key
+	ldr r1,=SOFtimer
+	str time,[r1]			// update SOF time
 	pop {pc}
 
 	.unreq time
-	.unreq SOFaddr
+
 
 /* build a keycode */
 recvKey$:
@@ -144,6 +136,7 @@ recvKey$:
 	ldr counterAddr,=count
 	ldrb counter,[counterAddr]	// load bit placement
 
+	
 	// increment count while we have it loaded
 	add r2,counter,#1
 	strb r2,[counterAddr]
@@ -180,6 +173,9 @@ getChar$:
 	
 	// keycode == r2
 
+	//mov r0,r2
+	//bl printNr
+
 	/* is it a break code? */
 	cmp keycode,#0xF0
 	beq setBreakFlag$
@@ -195,6 +191,7 @@ getChar$:
 	ldrb char,[r1,keycode]
 	.unreq keycode
 
+	
 
 	/* check for invalid char */
 	teq char,#0
