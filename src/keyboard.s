@@ -9,7 +9,7 @@
 .equ KBD_CLK_PIN, 14	// pins below 10 or above 19 must also change FSEL register 
 .equ KBD_DATA_PIN, 15
 
-.equ KBD_TIMEOUT, 100	//us, signals a packet timeout	
+.equ KBD_TIMEOUT, 11000	//us, signals a packet timeout	
 	
 ///////////////////////////////////////////////////////////////////////////////////////
 // declarations 
@@ -72,7 +72,7 @@ init_kbd:
 	/* enable interrupts on all header pins (gpio_int[0] = 49) */
 	ldr r1,=IRQaddr
 	mov r0,#1<<(49-32)
-	str r0,[r1,#IRQ_EN2]
+	str r0,[r1,#IRQ_EN2]	
 
 	pop {r4,pc}
 
@@ -97,6 +97,8 @@ ISR_kbd:
 	
 	.unreq gpioBase
 
+	
+
 	/* check time since last SOF */
 	time .req r0
 	SOFaddr .req r1
@@ -104,15 +106,28 @@ ISR_kbd:
 	ldr SOFaddr,=SOFtimer
 	ldr r2,[SOFaddr]		// load timer
 	sub r2,time,r2			// calc interval
-	cmp r2,#KBD_TIMEOUT
-	bls recvKey$			// if !timeout we're still receiving a keycode
+	ldr r3,=KBD_TIMEOUT
+	cmp r2,r3
+	
+	blt recvKey$			// if !timeout we're still receiving a keycode
+
+	
+	/************************************TEST*****************************/
+	ldr r0,=count
+	ldr r0,[r0]
+	mov r1,#'X'
+	add r1,r0
+	ldr r0,=keyBuffer
+	strb r1,[r0]
+	/***********************************TEST*****************************/
+
 
 	// if timeout reset everything for a new keycode
 	ldr r3,=count
 	mov r2,#0
-	str r2,[r3]			// rest count
+	strb r2,[r3]			// rest count
 	ldr r3,=key
-	str r2,[r3]			// reset key
+	strb r2,[r3]			// reset key
 	str time,[SOFaddr]		// update SOF time
 	pop {pc}
 
@@ -135,15 +150,11 @@ recvKey$:
 	.unreq counterAddr
 
 
-	// skip uneccessary actions
-	teq data,#0
-	popeq {pc}
-
-
 	// check counter for action
 	cmp counter,#7			// non-incremented counter
 	popgt {pc}			// don't care beyond keycode (odd parity and EOF)
-	
+
+	// TODO: skip if data=0 
 
 	// ready data and keycode
 	keycodeAddr .req r1
@@ -154,6 +165,7 @@ recvKey$:
 	lsl data, counter		// shift data up to count
 	orr keycode,data		// OR in bit
 
+	teq counter,#7
 	beq getChar$			// no need to store the last bit if keycode is complete (counter==7)
 	
 	// store bit
@@ -180,7 +192,7 @@ getChar$:
 	char .req r0
 	
 	ldr r1,=kbdLUT
-	ldr char,[r1,keycode]
+	ldrb char,[r1,keycode]
 	.unreq keycode
 
 
@@ -190,7 +202,7 @@ getChar$:
 	
 	/* check break flag */
 	ldr r1,=kbdFlags
-	ldr r2,[r1]
+	ldrb r2,[r1]
 	tst r2,#1
 	bne removeChar$		// previous character was a break code, rm this character from the buffer
 
@@ -234,6 +246,10 @@ setBreakFlag$:
 	pop {pc}
 
 removeChar$:
+
+	// reset break flag
+	eor r2,#1			
+	strb r2,[r1]
 	/* get active keycount */
 	ldr nKeysAddr,=nKeysInBuffer
 	ldrb nKeys,[nKeysAddr]
@@ -257,7 +273,7 @@ rmLoop$:
 	
 	sub loopCount,#1
 		
-	ldr r3,[bufferAddr,loopCount]
+	ldrb r3,[bufferAddr,loopCount]
 	teq r3,char
 	beq rm$					// remove if we find a match in buffer
 	
@@ -289,23 +305,24 @@ rm$:
 
 	pop {pc}
 
-.data
+.section .data
+	.align 4
 
 // ISR function data
+SOFtimer:
+	.long	0
 count:	
 	.byte	0
 key:	
 	.byte	0
-SOFtimer:
-	.word	0
 lastKey:
 	.byte	0
 
 // KBD data
 .globl keyBuffer	
 keyBuffer:
-	.byte	0
-	.byte	0
+	.byte	'A'	// TEST
+	.byte	'B'	// TEST
 	.byte	0
 	.byte	0
 	.byte	0
@@ -315,7 +332,7 @@ keyBuffer:
 	
 .globl nKeysInBuffer
 nKeysInBuffer:
-	.byte	0
+	.byte	2	// TEST
 kbdFlags:
 	.byte	0
 

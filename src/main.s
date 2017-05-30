@@ -1,4 +1,7 @@
 
+	.equ SCREEN_SIZE_X,1024
+	.equ SCREEN_SIZE_Y,768
+	
 	.section .init
 	.globl _start
 
@@ -42,8 +45,8 @@ reset:
 main:
 
 	/* initialize frame buffer with */
-	mov r0,#1024		// width
-	mov r1,#768		// height
+	mov r0,#SCREEN_SIZE_X		// width
+	mov r1,#SCREEN_SIZE_Y		// height
 	mov r2,#16		// bit depth/color mode
 	bl initFrameBuffer
 
@@ -103,70 +106,62 @@ render$:
 	mov r3,#0		// y2
 	bl drawRectangleDiag
 
-	/* draw a circle */
-	mov r0,#512		// x_c
-	ldr r1,=384		// y_c
-	ldr r2,=383		// radius
-	bl drawCircle
+	x .req r4
+	y .req r5
+	// set initial coordinates
+	mov x,#10
+	mov y,#10
 
+	p_nKeys .req r6
+	p_keyBuffer .req r7
+	ldr p_nKeys,=nKeysInBuffer
+	ldr p_keyBuffer,=keyBuffer
 
-drawIrqCount$:
+drawCharInput$:
 
-	ldr r0,=0xE7E0
-	bl setForeColor
-
-	/* draw string */
-	ldr r0,=irqCountFormat
-	mov r1,#irqCountFormatEnd-irqCountFormat
-	ldr r2,=irqCountFormatEnd
-	ldr r3,=irq_count
-	ldr r3,[r3]
-	mov r4,r3		// keep count
-	bl formatString
-
-	mov r1,r0
-	ldr r0,=irqCountFormatEnd
-	mov r2,#50
-	mov r3,#50
-	bl drawString
-
-	
-	ldr r0,=100000
+	ldr r0,=100000			// refresh rate
 	bl wait
 
-	/* clear string */
-	mov r0,#0		// black out
-	bl setForeColor
+	nKeys .req r8
+	/* check input */
+	ldrb nKeys,[p_nKeys]
+	cmp nKeys,#1
+	blt drawCharInput$		// no pending keys
+	
+drawLoop$:
+	sub nKeys,#1
 
-	ldr r0,=irqCountFormat
-	mov r1,#irqCountFormatEnd-irqCountFormat
-	ldr r2,=irqCountFormatEnd
-	ldr r3,=irq_count
-	mov r3,r4
-	bl formatString
+	ldrb r0,[p_keyBuffer,nKeys]
+	mov r1,x
+	mov r2,y
+	bl drawChar
 
-	mov r1,r0
-	ldr r0,=irqCountFormatEnd
-	mov r2,#50
-	mov r3,#50
-	bl drawString
+	/******* TEST ***********/
+	mov r0,#'.'
+	mov r1,x
+	mov r2,y
+	bl drawChar
+	/***********************/
 
 
-	b drawIrqCount$
+	cmp x,#SCREEN_SIZE_X-8
+	addlt x,#10
+	addge y,#10			// new line
+	movge x,#10			// start of line
+	cmp y,#SCREEN_SIZE_Y-8
+	bge endLoop$
 
-drawPressedChar$:
+	teq nKeys,#0
+	beq drawCharInput$
+	
 
-	// todo
+	b drawLoop$
+
+	.unreq p_nKeys
+	.unreq p_keyBuffer
+	.unreq nKeys
 
 
 endLoop$:	
 	
 	b endLoop$		// inf loop
-
-	
-.section .data
-
-irqCountFormat:
-	.ascii "Interrupt count: %d"
-irqCountFormatEnd:
-	
