@@ -154,6 +154,10 @@ drawIrqCount$:
 
 	b drawIrqCount$
 
+drawPressedChar$:
+
+	// todo
+
 
 endLoop$:	
 	

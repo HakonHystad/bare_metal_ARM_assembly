@@ -1,7 +1,7 @@
 /* handle interrupt requests and branch to the apropriate ISRs */
 	.include "mmap.s"
 
-	.equ KBD_CLK_PIN, 14
+	.equ INTERRUPT_PIN, 14
 		
 ///////////////////////////////////////////////////////////////////////////////////////
 // declarations 
@@ -46,22 +46,23 @@ PDG2$:
 	/* different ISRs for source 63:32 goes here */
 	// gpio_int[0]..gpio_int[3] <=> GPU_interrupt 49..52, 49 covers all pins of the header
 	tst r0,#1<<(49-32)	// check gpio_int[0], all header pins
+
+	/* add ISR */
 	blne ISR_kbd
 	
 return$:
 	pop {r0-r3,lr}
 	eret			// exception return in HYP mode
 
-/*-------------------------------------- keyboard clock interrupt handler  ---------------------------------------*/
-ISR_kbd:
-	// clear event detect bit for GPIO pin 2 (kbd clock)
-
-	push {r0-r4,lr}
+/*-------------------------------------- test ISR  ---------------------------------------*/
+// for testing purposes
+ISR_pins:
+	push {lr}
 
 	// clear interrupt (by writing 1 to event detect reg)
 
 	ldr r0, =GPIOaddr
-	mov r1, #1<<KBD_CLK_PIN
+	mov r1, #1<<INTERRUPT_PIN
 	str r1, [r0,#GPEDS0]
 
 	/*-------------------------------------- ISR  ---------------------------------------*/
@@ -77,7 +78,7 @@ ISR_kbd:
 
 	
 
-	pop {r0-r4,pc}
+	pop {pc}
 
 .section .data
 	

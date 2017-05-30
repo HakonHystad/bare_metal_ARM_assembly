@@ -8,6 +8,8 @@
 //////////////////////////////////////////////////////////////////////////////////////
 .equ KBD_CLK_PIN, 14	// pins below 10 or above 19 must also change FSEL register 
 .equ KBD_DATA_PIN, 15
+
+.equ KBD_TIMEOUT, 100	//us, signals a packet timeout	
 	
 ///////////////////////////////////////////////////////////////////////////////////////
 // declarations 
@@ -15,6 +17,7 @@
 
 .section .text
 	.globl init_kbd
+	.globl ISR_kbd
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // definitions 
@@ -74,3 +77,257 @@ init_kbd:
 	pop {r4,pc}
 
 	.unreq baseAddr
+
+/*-------------------------------------- ISR_kbd  ---------------------------------------*/
+// fires when a falling edge interrupt is triggered on clock pin
+ISR_kbd:
+	push {lr}
+
+
+	/* clear interrupt (by writing 1 to event detect reg) */
+	gpioBase .req r0
+	ldr gpioBase, =GPIOaddr
+	mov r1, #1<<KBD_CLK_PIN
+	str r1,[gpioBase,#GPEDS0]
+
+	/* read level on data pin */
+	data .req r3
+	ldr data,[gpioBase,#GPLEV0]
+	and data,#1<<KBD_DATA_PIN
+	
+	.unreq gpioBase
+
+	/* check time since last SOF */
+	time .req r0
+	SOFaddr .req r1
+	bl getTime
+	ldr SOFaddr,=SOFtimer
+	ldr r2,[SOFaddr]		// load timer
+	sub r2,time,r2			// calc interval
+	cmp r2,#KBD_TIMEOUT
+	bls recvKey$			// if !timeout we're still receiving a keycode
+
+	// if timeout reset everything for a new keycode
+	ldr r3,=count
+	mov r2,#0
+	str r2,[r3]			// rest count
+	ldr r3,=key
+	str r2,[r3]			// reset key
+	str time,[SOFaddr]		// update SOF time
+	pop {pc}
+
+	.unreq time
+	.unreq SOFaddr
+
+/* build a keycode */
+recvKey$:
+
+	counterAddr .req r1
+	counter .req r0
+	
+	/* add bit */
+	ldr counterAddr,=count
+	ldrb counter,[counterAddr]	// load bit placement
+
+	// increment count while we have it loaded
+	add r2,counter,#1
+	strb r2,[counterAddr]
+	.unreq counterAddr
+
+
+	// skip uneccessary actions
+	teq data,#0
+	popeq {pc}
+
+
+	// check counter for action
+	cmp counter,#7			// non-incremented counter
+	popgt {pc}			// don't care beyond keycode (odd parity and EOF)
+	
+
+	// ready data and keycode
+	keycodeAddr .req r1
+	keycode .req r2
+	ldr keycodeAddr,=key
+	ldrb keycode,[keycodeAddr]
+	lsr data,#KBD_DATA_PIN		// set data to lsb
+	lsl data, counter		// shift data up to count
+	orr keycode,data		// OR in bit
+
+	beq getChar$			// no need to store the last bit if keycode is complete (counter==7)
+	
+	// store bit
+	strb keycode,[keycodeAddr]
+	pop {pc}
+	.unreq keycodeAddr
+	.unreq counter
+	.unreq data
+
+/* if keycode is complete, take action */
+getChar$:
+	
+	// keycode == r2
+
+	/* is it a break code? */
+	cmp keycode,#0xF0
+	beq setBreakFlag$
+
+	/* bounds check */
+	cmp keycode,#0x7f
+	popgt {pc}
+
+	/* do lookup */
+	char .req r0
+	
+	ldr r1,=kbdLUT
+	ldr char,[r1,keycode]
+	.unreq keycode
+
+
+	/* check for invalid char */
+	teq char,#0
+	popeq {pc}		// invalid character
+	
+	/* check break flag */
+	ldr r1,=kbdFlags
+	ldr r2,[r1]
+	tst r2,#1
+	bne removeChar$		// previous character was a break code, rm this character from the buffer
+
+	/* not an invalid char, no break code set. store it in keybuffer */
+
+	/* only the last key has typematic repeat, check if this is it */
+	lastKeyAddr .req r1
+	ldr lastKeyAddr,=lastKey
+	ldrb r2,[lastKeyAddr]
+	teq r2,char
+	popeq {pc}		// its a repeat, exit
+
+
+	// get active keycount
+	nKeysAddr .req r2
+	nKeys .req r3
+	ldr nKeysAddr,=nKeysInBuffer
+	ldrb nKeys,[nKeysAddr]
+
+	
+	cmp nKeys,#KBD_BUFFER_SIZE-1
+	popge {pc}		// buffer is full
+
+	// update last key
+	strb char,[lastKeyAddr]
+	.unreq lastKeyAddr
+	// store key
+	ldr r1,=keyBuffer
+	strb char,[r1,nKeys]	// store new key
+	// update keycount
+	add nKeys,#1
+	strb nKeys,[nKeysAddr]	// increment
+
+	pop {pc}
+
+	
+setBreakFlag$:	
+	ldr r0,=kbdFlags
+	mov r1,#1
+	strb r1,[r0]
+	pop {pc}
+
+removeChar$:
+	/* get active keycount */
+	ldr nKeysAddr,=nKeysInBuffer
+	ldrb nKeys,[nKeysAddr]
+
+	/* do action based on keycount */
+	cmp nKeys,#1
+	subeq nKeys,#1		// if just 1 key is pressed let it be overwritten
+	streqb nKeys,[nKeysAddr]
+	popeq {pc}
+	poplt {pc}		// something is wrong a key should be pressed, exit
+
+	.unreq nKeys
+	.unreq nKeysAddr
+
+	loopCount .req r2
+	bufferAddr .req r1
+
+	ldr bufferAddr,=keyBuffer
+/* traverse keyBuffer and remove char */
+rmLoop$:
+	
+	sub loopCount,#1
+		
+	ldr r3,[bufferAddr,loopCount]
+	teq r3,char
+	beq rm$					// remove if we find a match in buffer
+	
+	teq loopCount,#0
+	popeq {pc}				// exit loop in case char was not in buffer
+	
+	b rmLoop$
+
+
+/* remove char from buffer and decrement keycount */ 
+rm$:
+	mov r3,#0				// this does not work, pressed keys need to be in the bottom of buffer
+	strb r3,[bufferAddr,loopCount]		// null out
+
+	.unreq loopCount
+	.unreq bufferAddr
+	
+	
+	nKeysAddr .req r1
+	nKeys .req r2
+	
+	ldr nKeysAddr,=nKeysInBuffer
+	ldrb nKeys,[nKeysAddr]
+	sub nKeys,#1				// decrement nKeys
+	strb nKeys,[nKeysAddr]
+
+	.unreq nKeysAddr
+	.unreq nKeys
+
+	pop {pc}
+
+.data
+
+// ISR function data
+count:	
+	.byte	0
+key:	
+	.byte	0
+SOFtimer:
+	.word	0
+lastKey:
+	.byte	0
+
+// KBD data
+.globl keyBuffer	
+keyBuffer:
+	.byte	0
+	.byte	0
+	.byte	0
+	.byte	0
+	.byte	0
+	.byte	0
+
+.equ KBD_BUFFER_SIZE,6
+	
+.globl nKeysInBuffer
+nKeysInBuffer:
+	.byte	0
+kbdFlags:
+	.byte	0
+
+
+kbdLUT:	
+	//       0     1     2     3     4     5     6     7     8     9     a     b     c     d     e     f
+	.byte 0000, 000,  0000, 0000, 0000, 0000, 0000, 0000,  000, 0000, 0000, 0000, 0000, '\t',  '`',  000	// 0
+	.byte 0000, 0000, 0000,  000, 0000,  'Q',  '1',  000,  000,  000,  'Z',  'S',  'A',  'W',  '2', 0000	// 1
+	.byte 0000,  'C',  'X',  'D',  'E',  '4',  '3', 0000,  000,  ' ',  'V',  'F',  'T',  'R',  '5', 0000	// 2
+	.byte 0000,  'N',  'B',  'H',  'G',  'Y',  '6',  000,  000,  000,  'M',  'J',  'U',  '7',  '8',  000	// 3
+	.byte 0000, 0000,  'K',  'I',  'O',  '0',  '9',  000,  000,  '.',  '/',  'l',  ';',  'p',  '-',  000	// 4
+	.byte 0000,  000, 0000,  000,  '[',  '=',  000,  000, 0xa0, 0000, '\n',  ']',  000, 0000,  000,  000	// 5
+	.byte 0000,  '<',  000,  000,  000,  000, '\r',  000,  000, 0000,  000, 0000, 0x06,  000,  000,  000	// 6
+	.byte 0000, 0000, 0000,  '5', 0000, 0000, 0000, 0000, 0000,  '+', 0000,  '-',  '*', 0000, 0000,  000    // 7
+	.byte 0000,  000,  000, 0000	
