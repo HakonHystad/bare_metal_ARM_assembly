@@ -9,7 +9,7 @@
 .equ KBD_CLK_PIN, 14	// pins below 10 or above 19 must also change FSEL register 
 .equ KBD_DATA_PIN, 15
 
-.equ KBD_TIMEOUT, 11000	//us, signals a packet timeout	
+.equ KBD_TIMEOUT, 900	//us, signals a packet timeout	
 	
 ///////////////////////////////////////////////////////////////////////////////////////
 // declarations 
@@ -147,8 +147,6 @@ recvKey$:
 	cmp counter,#7			// non-incremented counter
 	popgt {pc}			// don't care beyond keycode (odd parity and EOF)
 
-	teq data,#0
-	beq testComplete$		// skip storage if data is 0
 
 	// ready data and keycode
 	keycodeAddr .req r1
@@ -158,13 +156,12 @@ recvKey$:
 	lsr data,#KBD_DATA_PIN		// set data to lsb
 	lsl data, counter		// shift data up to count
 	orr keycode,data		// OR in bit	
-	// store bit
-	strb keycode,[keycodeAddr]
 
-testComplete$:	
 	teq counter,#7
 	beq getChar$			// no need to store the last bit if keycode is complete (counter==7)
 	
+	// store bit
+	strb keycode,[keycodeAddr]
 	pop {pc}
 	.unreq keycodeAddr
 	.unreq counter
