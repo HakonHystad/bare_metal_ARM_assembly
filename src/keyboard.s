@@ -147,7 +147,8 @@ recvKey$:
 	cmp counter,#7			// non-incremented counter
 	popgt {pc}			// don't care beyond keycode (odd parity and EOF)
 
-	// TODO: skip if data=0 
+	teq data,#0
+	beq testComplete$		// skip storage if data is 0
 
 	// ready data and keycode
 	keycodeAddr .req r1
@@ -156,13 +157,14 @@ recvKey$:
 	ldrb keycode,[keycodeAddr]
 	lsr data,#KBD_DATA_PIN		// set data to lsb
 	lsl data, counter		// shift data up to count
-	orr keycode,data		// OR in bit
+	orr keycode,data		// OR in bit	
+	// store bit
+	strb keycode,[keycodeAddr]
 
+testComplete$:	
 	teq counter,#7
 	beq getChar$			// no need to store the last bit if keycode is complete (counter==7)
 	
-	// store bit
-	strb keycode,[keycodeAddr]
 	pop {pc}
 	.unreq keycodeAddr
 	.unreq counter
@@ -173,11 +175,8 @@ getChar$:
 	
 	// keycode == r2
 
-	//mov r0,r2
-	//bl printNr
-
 	/* is it a break code? */
-	cmp keycode,#0xF0
+	teq keycode,#0xF0
 	beq setBreakFlag$
 
 	/* bounds check */
@@ -318,8 +317,8 @@ lastKey:
 // KBD data
 .globl keyBuffer	
 keyBuffer:
-	.byte	'A'	// TEST
-	.byte	'B'	// TEST
+	.byte	0//'A'	// TEST
+	.byte	0//'B'	// TEST
 	.byte	0
 	.byte	0
 	.byte	0
@@ -329,7 +328,7 @@ keyBuffer:
 	
 .globl nKeysInBuffer
 nKeysInBuffer:
-	.byte	2	// TEST
+	.byte	0//2	// TEST
 kbdFlags:
 	.byte	0
 

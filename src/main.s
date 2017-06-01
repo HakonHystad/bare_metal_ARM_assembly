@@ -118,14 +118,32 @@ render$:
 	ldr p_keyBuffer,=keyBuffer
 
 
+	mov r9,#0//DBG
 drawCharInput$:
 
-	ldr r0,=100000			// refresh rate
+
+	ldr r0,=10000			// refresh rate
 	bl wait
+
+	/*********DBG*********/
+	mov r0,#0
+	bl setForeColor
+	mov r0,r9
+	bl printNr
+	/*********DBG********/
 
 	nKeys .req r8
 	/* check input */
 	ldrb nKeys,[p_nKeys]
+
+	/*********DBG**********/
+	ldr r0,=0xE7E0
+	bl setForeColor
+	mov r9,nKeys
+	mov r0,nKeys
+	bl printNr
+	/********DBG**********/
+	
 	cmp nKeys,#1
 	blt drawCharInput$		// no pending keys
 	
@@ -136,14 +154,6 @@ drawLoop$:
 	mov r1,x
 	mov r2,y
 	bl drawChar
-
-	/******* TEST ***********/
-	mov r0,#'.'
-	mov r1,x
-	mov r2,y
-	bl drawChar
-	/***********************/
-
 
 	cmp x,#SCREEN_SIZE_X-8
 	addlt x,#10
