@@ -112,49 +112,26 @@ render$:
 	mov x,#10
 	mov y,#10
 
-	p_nKeys .req r6
-	p_keyBuffer .req r7
-	ldr p_nKeys,=nKeysInBuffer
+	p_keyBuffer .req r6
 	ldr p_keyBuffer,=keyBuffer
 
 
-	mov r9,#0//DBG
 drawCharInput$:
 
 
 	ldr r0,=10000			// refresh rate
 	bl wait
 
-	/*********DBG*********/
-	mov r0,#0
-	bl setForeColor
-	mov r0,r9
-	bl printNr
-	/*********DBG********/
+	ldrb r0,[p_keyBuffer]		// get key pressed
+	teq r0,#0
+	beq drawCharInput$		// no pending keys
 
-	nKeys .req r8
-	/* check input */
-	ldrb nKeys,[p_nKeys]
-
-	/*********DBG**********/
-	ldr r0,=0xE7E0
-	bl setForeColor
-	mov r9,nKeys
-	mov r0,nKeys
-	bl printNr
-	/********DBG**********/
-	
-	cmp nKeys,#1
-	blt drawCharInput$		// no pending keys
-	
-drawLoop$:
-	sub nKeys,#1
-
-	ldrb r0,[p_keyBuffer,nKeys]
+	/* output char */
 	mov r1,x
 	mov r2,y
 	bl drawChar
 
+	/* update screen position */
 	cmp x,#SCREEN_SIZE_X-8
 	addlt x,#10
 	addge y,#10			// new line
@@ -162,15 +139,9 @@ drawLoop$:
 	cmp y,#SCREEN_SIZE_Y-8
 	bge endLoop$
 
-	teq nKeys,#0
-	beq drawCharInput$
+	b drawCharInput$
 	
-
-	b drawLoop$
-
-	.unreq p_nKeys
 	.unreq p_keyBuffer
-	.unreq nKeys
 
 
 endLoop$:	
